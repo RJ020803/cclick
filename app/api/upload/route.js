@@ -4,9 +4,11 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import db from "@/app/db";
 import { imageTable } from "@/app/db/schema";
+import { eq } from "drizzle-orm";
 
 const R2_CLIENT = new S3Client({
   region: "auto",
@@ -102,6 +104,48 @@ export async function GET(req) {
     });
   } catch (error) {
     console.error("Error in Download API:", error);
+    return new Response(JSON.stringify({ error: "Server error" }), {
+      status: 500,
+    });
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const key = searchParams.get("key");
+
+    console.log(key);
+
+    if (!key) {
+      return new Response(JSON.stringify({ error: "Key is required" }), {
+        status: 400,
+      });
+    }
+
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: key,
+    };
+
+    await R2_CLIENT.send(new DeleteObjectCommand(params));
+    console.log("File deleted from R2:", key);
+
+    // // const deletedImage = await uploadedImage.findOneAndDelete
+    const deletedImage = db
+      .delete(imageTable)
+      .where(eq(imageTable.image, key))
+      .execute();
+    console.log("Image deleted from MongoDB:", deletedImage);
+
+    return new Response(
+      JSON.stringify({ message: "Image deleted successfully" }),
+      {
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error in Delete API:", error);
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
     });

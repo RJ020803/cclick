@@ -35,6 +35,23 @@ const UploadedImages = () => {
     );
   }
 
+  const handleDelete = async (key) => {
+    console.log(key);
+    try {
+      const response = await fetch(`/api/upload?key=${key}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setImages(images.filter((image) => image.key !== key));
+      } else {
+        console.error("Error deleting image");
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center py-8 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Uploaded Images</h1>
@@ -45,7 +62,7 @@ const UploadedImages = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4">
           {images.map((image) => (
             <div
-              key={image._id}
+              key={image.key}
               className="bg-white rounded-lg shadow-lg overflow-hidden"
             >
               <img
@@ -63,8 +80,13 @@ const UploadedImages = () => {
                 >
                   View Full Image
                 </a>
+                <button
+                  onClick={() => handleDelete(image.image)}
+                  className="text-red-500 text-sm font-semibold hover:underline ml-4"
+                >
+                  Delete
+                </button>
               </div>
-
             </div>
           ))}
         </div>
@@ -72,7 +94,5 @@ const UploadedImages = () => {
     </div>
   );
 };
-
-
 
 export default UploadedImages;
